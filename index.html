@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Developer Exam Tutor</title>
+<style>
+:root{--bg:#faf9f5;--card:#fff;--ink:#1f1e1d;--mute:#6b6a68;--line:#e6e3da;--accent:#c96442;--accent-soft:#f6e6df;--ok:#2f7d4f;--ok-soft:#e3f2ea;--bad:#b3392f}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1b19;--card:#262522;--ink:#f0eee8;--mute:#a09d95;--line:#3a3834;--accent:#e08a6a;--accent-soft:#3a2a24;--ok:#6cc48f;--ok-soft:#1f3328;--bad:#e8786d}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);height:100vh;display:flex}
+main{flex:1;min-width:0;overflow-y:auto;padding:24px 28px 60px}
+aside{width:380px;flex:none;border-left:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;height:100vh}
+h1{font-size:22px;margin:0 0 2px}.sub{color:var(--mute);margin:0 0 16px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 14px;border-radius:999px;cursor:pointer;font:inherit}
+nav button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.card h3{margin:0 0 6px;font-size:16px}
+.tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-soft);padding:1px 8px;border-radius:999px;margin-right:6px}
+.term{display:inline-block;font:12px ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);padding:1px 7px;border-radius:6px;margin:2px 4px 0 0}
+.analogy{border-left:3px solid var(--accent);padding:4px 12px;margin:8px 0;background:var(--accent-soft);border-radius:0 8px 8px 0}
+.body p{margin:6px 0}
+.opt{padding:6px 10px;border:1px solid var(--line);border-radius:8px;margin:5px 0}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.expl{color:var(--mute);margin-top:8px;font-size:14px}
+.done{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--mute);font-size:14px;cursor:pointer}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0 14px}.bar>div{height:100%;background:var(--accent)}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600;font-size:13px}
+.empty{color:var(--mute);padding:20px;text-align:center}
+.hd{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600}.hd small{display:block;font-weight:400;color:var(--mute)}
+#log{flex:1;overflow-y:auto;padding:14px 16px}
+.m{margin:0 0 10px;padding:8px 12px;border-radius:12px;white-space:pre-wrap;max-width:92%}
+.m.u{background:var(--accent);color:#fff;margin-left:auto}.m.a{background:var(--bg);border:1px solid var(--line)}
+.m.s{color:var(--mute);font-size:13px;background:none;border:none;padding:0 4px}
+form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+textarea{flex:1;resize:none;font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);height:44px}
+form button{border:0;background:var(--accent);color:#fff;border-radius:10px;padding:0 16px;cursor:pointer;font:inherit}
+form button:disabled{opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px}
+.chips button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer}
+@media(max-width:860px){body{flex-direction:column;height:auto}main{overflow:visible}aside{width:auto;height:70vh;border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Claude Developer Exam Tutor</h1>
+  <p class="sub">Anthropic Skilljar developer certificates &middot; lessons, practice, cheat sheet. Ask the chatbot on the right to change anything here.</p>
+  <nav id="nav"></nav>
+  <div id="view"></div>
+</main>
+<aside>
+  <div class="hd">Site editor chat<small>Tell me what to add, change or remove</small></div>
+  <div id="log"></div>
+  <div class="chips" id="chips"></div>
+  <form id="f"><textarea id="t" placeholder="e.g. Add a lesson on prompt caching"></textarea><button id="go">Send</button></form>
+</aside>
+
+<script>
+const SEED = {
+ lessons:[
+  {id:"l-tooluse",course:"Building with the Claude API",title:"Tool use (function calling)",
+   analogy:"Claude is a manager who cannot leave the office. Tools are assistants who run errands and report back; Claude decides who to send and what to ask.",
+   body:["You describe each tool with a name, a description and an input_schema (JSON Schema). Claude never runs the tool itself.","When Claude wants a tool, the response has stop_reason \"tool_use\" and contains a tool_use block with an id and the input.","Your code runs the function, then sends a new user message containing a tool_result block that references the same tool_use_id.","Repeat until stop_reason is \"end_turn\". This is the basic agentic loop."],
+   terms:["tool_use","tool_result","input_schema","stop_reason","tool_use_id"]},
+  {id:"l-mcp",course:"Introduction to Model Context Protocol",title:"Model Context Protocol (MCP)",
+   analogy:"MCP is USB-C for AI apps: one standard plug, so any client can connect to any server without custom wiring.",
+   body:["An MCP server exposes three kinds of things: tools (actions the model can call), resources (data the app can read) and prompts (reusable templates).","An MCP client lives inside the host app (for example Claude Code) and connects to servers.","Common transports are stdio (local process) and streamable HTTP (remote server).","Advanced topics build on this: sampling, roots, progress notifications and authorization for remote servers."],
+   terms:["MCP server","MCP client","tools","resources","prompts","stdio","streamable HTTP"]},
+  {id:"l-subagents",course:"Introduction to Subagents",title:"Subagents",
+   analogy:"A head chef hands the sauce to a station chef. The station chef works in their own corner and returns only the finished sauce, so the head chef's counter stays clean.",
+   body:["A subagent runs in its own context window with its own system prompt and its own tool permissions.","Only its final result returns to the main conversation, which protects the main context from noisy exploration.","In Claude Code, subagents are defined as Markdown files with YAML frontmatter, for example in .claude/agents.","Good uses: broad codebase search, independent reviews, parallel research."],
+   terms:["subagent","context window","tool permissions","frontmatter"]},
+  {id:"l-skills",course:"Introduction to Agent Skills",title:"Agent Skills",
+   analogy:"A skill is a recipe binder on the shelf. The cook only sees the spine labels until a dish needs a recipe, then opens that one binder.",
+   body:["A skill is a folder containing a SKILL.md file with name and description frontmatter, plus optional scripts and reference files.","Progressive disclosure: only the name and description are loaded up front; the full instructions load when the skill is relevant.","So the description must say clearly when the skill should be used."],
+   terms:["SKILL.md","description","progressive disclosure"]},
+  {id:"l-cc",course:"Claude Code 101 / Claude Code in Action",title:"Claude Code essentials",
+   analogy:"Claude Code is a new teammate on your repo. CLAUDE.md is the onboarding doc you hand them on day one.",
+   body:["CLAUDE.md stores persistent project instructions that load into every session.","Plan mode lets Claude explore and propose before making edits.","Slash commands, hooks (scripts run on events such as before or after a tool call) and permissions control behavior and safety.","MCP servers extend Claude Code with external tools."],
+   terms:["CLAUDE.md","plan mode","slash commands","hooks","permissions"]},
+  {id:"l-cache",course:"Building with the Claude API",title:"Prompt caching",
+   analogy:"Photocopy the long handbook once. Every later question reuses the copy instead of re-reading the whole book.",
+   body:["Mark a stable prefix (system prompt, tool definitions, large documents) with cache_control.","Later requests that start with the identical prefix read it from cache, which lowers cost and latency.","Anything that changes inside the prefix invalidates the cache from that point on, so put stable content first and variable content last."],
+   terms:["cache_control","prefix","cache hit"]}
+ ],
+ questions:[
+  {id:"q1",topic:"Tool use",q:"Claude responds with stop_reason \"tool_use\". What must your code do next?",options:["Wait for Claude to finish the tool itself","Run the tool and send back a tool_result with the matching tool_use_id","Resend the original request unchanged","Add the tool result to the system prompt"],answer:1,explanation:"Claude only requests the call. Your code executes it and returns a tool_result referencing the tool_use_id."},
+  {id:"q2",topic:"Tool use",q:"Which field of a tool definition tells Claude what arguments the tool accepts?",options:["description","name","input_schema","cache_control"],answer:2,explanation:"input_schema is a JSON Schema that defines the arguments. The description tells Claude when and why to use the tool."},
+  {id:"q3",topic:"MCP",q:"Which is NOT one of the three things an MCP server can expose?",options:["Tools","Resources","Prompts","Subagents"],answer:3,explanation:"MCP servers expose tools, resources and prompts. Subagents are a separate Claude Code concept."},
+  {id:"q4",topic:"MCP",q:"Which transport runs an MCP server as a local process?",options:["stdio","streamable HTTP","WebSocket only","gRPC"],answer:0,explanation:"stdio launches the server as a local subprocess. Streamable HTTP is for remote servers."},
+  {id:"q5",topic:"Subagents",q:"What is the main benefit of delegating a broad codebase search to a subagent?",options:["It uses a bigger model automatically","Its exploration stays in its own context and only the result returns","It skips tool permissions","It makes the main prompt cacheable"],answer:1,explanation:"Subagents have separate context windows, which keeps the main conversation focused."},
+  {id:"q6",topic:"Skills",q:"What does Claude load first for an installed skill?",options:["The full SKILL.md body and all scripts","Only the name and description","Nothing until the user types a slash command","The entire skills folder"],answer:1,explanation:"Progressive disclosure: name and description first, full instructions only when relevant."},
+  {id:"q7",topic:"Claude Code",q:"Where do you put persistent project instructions that load every session?",options:["CLAUDE.md","package.json","A hook script","The .git folder"],answer:0,explanation:"CLAUDE.md holds persistent project context and conventions."},
+  {id:"q8",topic:"Prompt caching",q:"For best cache hits, how should you order a prompt?",options:["Variable content first, stable content last","Stable content first, variable content last","Random order","Put everything in the user message"],answer:1,explanation:"The cache matches an identical prefix, so stable content goes first."}
+ ],
+ cheats:[
+  {id:"c1",scenario:"Claude needs live data or must perform an action",practice:"Define a tool with a clear description and input_schema; run it in your code; return tool_result."},
+  {id:"c2",scenario:"Many apps need the same integration",practice:"Build one MCP server instead of custom glue for each client."},
+  {id:"c3",scenario:"Noisy exploration is polluting the main context",practice:"Delegate to a subagent with its own context and limited tools."},
+  {id:"c4",scenario:"Repeating a team workflow or know-how",practice:"Package it as a skill; write a precise description so it triggers correctly."},
+  {id:"c5",scenario:"Same long prefix on many requests",practice:"Use prompt caching with cache_control; keep the prefix stable and first."},
+  {id:"c6",scenario:"Agent should always follow repo conventions",practice:"Put them in CLAUDE.md; use hooks for rules that must be enforced."}
+ ]
+};
+
+let data = null, tab = "lessons", db = null, sample = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = p => p + Math.random().toString(36).slice(2, 8);
+let progress = {};
+try { progress = JSON.parse(localStorage.getItem("tutor-progress") || "{}"); } catch(e){}
+function saveProgress(){ try { localStorage.setItem("tutor-progress", JSON.stringify(progress)); } catch(e){} }
+
+function normalize(d){
+  d = d && typeof d === "object" ? d : {};
+  return {lessons:Array.isArray(d.lessons)?d.lessons:[], questions:Array.isArray(d.questions)?d.questions:[], cheats:Array.isArray(d.cheats)?d.cheats:[]};
+}
+async function loadData(){
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem("tutor-content") || "null"); } catch(e){}
+  data = normalize(local || SEED);
+  render();
+  try {
+    db = await claude.use("db");
+    if (db) {
+      const snap = await Promise.race([db.doc("site/content").get(), new Promise(r => setTimeout(() => r(null), 10000))]);
+      const v = snap && (typeof snap.data === "function" ? snap.data() : snap);
+      if (v && v.json) { data = normalize(JSON.parse(v.json)); render(); }
+    }
+  } catch(e){}
+}
+async function saveData(){
+  try { localStorage.setItem("tutor-content", JSON.stringify(data)); } catch(e){}
+  try { if (db) await db.doc("site/content").set({json: JSON.stringify(data)}); } catch(e){}
+  render();
+}
+
+function render(){
+  const tabs = [["lessons","Lessons"],["practice","Practice"],["cheat","Cheat sheet"],["progress","Progress"]];
+  $("#nav").innerHTML = tabs.map(([k,l]) => `<button class="${tab===k?"on":""}" data-t="${k}">${l}</button>`).join("");
+  $("#nav").querySelectorAll("button").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+  const v = $("#view");
+  if (tab === "lessons") {
+    v.innerHTML = data.lessons.map(l => `<div class="card"><span class="tag">${esc(l.course)}</span><h3>${esc(l.title)}</h3>
+      <div class="analogy">${esc(l.analogy)}</div>
+      <div class="body">${(l.body||[]).map(p=>`<p>${esc(p)}</p>`).join("")}</div>
+      <div>${(l.terms||[]).map(t=>`<span class="term">${esc(t)}</span>`).join("")}</div>
+      <label class="done"><input type="checkbox" data-l="${esc(l.id)}" ${progress["l:"+l.id]?"checked":""}> Mark as learned</label></div>`).join("") || `<div class="empty">No lessons yet. Ask the chatbot to add one.</div>`;
+    v.querySelectorAll("input[data-l]").forEach(c => c.onchange = () => { progress["l:"+c.dataset.l] = c.checked; saveProgress(); });
+  } else if (tab === "practice") {
+    v.innerHTML = data.questions.map((q,i) => `<div class="card"><span class="tag">${esc(q.topic)}</span><h3>${i+1}. ${esc(q.q)}</h3>
+      ${(q.options||[]).map((o,j)=>`<div class="opt ${j===q.answer?"right":""}">${"ABCDEF"[j]}. ${esc(o)}${j===q.answer?" &#10003;":""}</div>`).join("")}
+      <div class="expl">${esc(q.explanation)}</div></div>`).join("") || `<div class="empty">No questions yet. Ask the chatbot to add some.</div>`;
+  } else if (tab === "cheat") {
+    v.innerHTML = data.cheats.length ? `<div class="card"><table><tr><th>Scenario</th><th>Best practice</th></tr>${data.cheats.map(c=>`<tr><td>${esc(c.scenario)}</td><td>${esc(c.practice)}</td></tr>`).join("")}</table></div>` : `<div class="empty">Cheat sheet is empty.</div>`;
+  } else {
+    const done = data.lessons.filter(l => progress["l:"+l.id]).length, total = data.lessons.length, pct = total ? Math.round(done/total*100) : 0;
+    v.innerHTML = `<div class="card"><h3>${done} of ${total} lessons learned (${pct}%)</h3><div class="bar"><div style="width:${pct}%"></div></div>
+      ${data.lessons.map(l=>`<div>${progress["l:"+l.id]?"&#10003;":"&#9675;"} ${esc(l.title)}</div>`).join("")}</div>
+      <div class="card"><h3>Content</h3><div>${data.lessons.length} lessons &middot; ${data.questions.length} practice questions &middot; ${data.cheats.length} cheat-sheet rows</div></div>`;
+  }
+}
+
+/* ---------- chatbot ---------- */
+const history = [];
+function addMsg(cls, text){ const d = document.createElement("div"); d.className = "m " + cls; d.textContent = text; $("#log").appendChild(d); $("#log").scrollTop = 1e9; return d; }
+const arr = {type:"array", items:{type:"string"}};
+const tools = [
+ {name:"list_content", description:"List ids and titles of all lessons, questions and cheat-sheet rows.", inputSchema:{type:"object",properties:{}},
+  execute: () => ({lessons:data.lessons.map(l=>({id:l.id,title:l.title})), questions:data.questions.map(q=>({id:q.id,q:q.q})), cheats:data.cheats.map(c=>({id:c.id,scenario:c.scenario}))})},
+ {name:"add_lesson", description:"Add a lesson. Analogy first, plain language, real exam terms kept in English.", inputSchema:{type:"object",properties:{title:{type:"string"},course:{type:"string"},analogy:{type:"string"},body:arr,terms:arr},required:["title","analogy","body"]},
+  execute: i => { const l = {id:uid("l-"),course:i.course||"General",title:i.title,analogy:i.analogy,body:i.body||[],terms:i.terms||[]}; data.lessons.push(l); return {ok:true,id:l.id}; }},
+ {name:"update_lesson", description:"Change fields of an existing lesson by id. Only pass fields to change.", inputSchema:{type:"object",properties:{id:{type:"string"},title:{type:"string"},course:{type:"string"},analogy:{type:"string"},body:arr,terms:arr},required:["id"]},
+  execute: i => { const l = data.lessons.find(x=>x.id===i.id); if(!l) throw new Error("no such lesson"); for (const k of ["title","course","analogy","body","terms"]) if (i[k]!==undefined) l[k]=i[k]; return {ok:true}; }},
+ {name:"add_question", description:"Add a multiple-choice practice question. answer is the zero-based index of the correct option.", inputSchema:{type:"object",properties:{topic:{type:"string"},q:{type:"string"},options:arr,answer:{type:"integer"},explanation:{type:"string"}},required:["topic","q","options","answer","explanation"]},
+  execute: i => { if(!(i.answer>=0 && i.answer<i.options.length)) throw new Error("answer index out of range"); const q = {id:uid("q-"),topic:i.topic,q:i.q,options:i.options,answer:i.answer,explanation:i.explanation}; data.questions.push(q); return {ok:true,id:q.id}; }},
+ {name:"update_question", description:"Change fields of an existing question by id.", inputSchema:{type:"object",properties:{id:{type:"string"},topic:{type:"string"},q:{type:"string"},options:arr,answer:{type:"integer"},explanation:{type:"string"}},required:["id"]},
+  execute: i => { const q = data.questions.find(x=>x.id===i.id); if(!q) throw new Error("no such question"); for (const k of ["topic","q","options","answer","explanation"]) if (i[k]!==undefined) q[k]=i[k]; if(!(q.answer>=0 && q.answer<q.options.length)) throw new Error("answer index out of range"); return {ok:true}; }},
+ {name:"add_cheat", description:"Add a cheat-sheet row: a scenario and its best practice, concise.", inputSchema:{type:"object",properties:{scenario:{type:"string"},practice:{type:"string"}},required:["scenario","practice"]},
+  execute: i => { const c = {id:uid("c-"),scenario:i.scenario,practice:i.practice}; data.cheats.push(c); return {ok:true,id:c.id}; }},
+ {name:"update_cheat", description:"Change a cheat-sheet row by id.", inputSchema:{type:"object",properties:{id:{type:"string"},scenario:{type:"string"},practice:{type:"string"}},required:["id"]},
+  execute: i => { const c = data.cheats.find(x=>x.id===i.id); if(!c) throw new Error("no such row"); for (const k of ["scenario","practice"]) if (i[k]!==undefined) c[k]=i[k]; return {ok:true}; }},
+ {name:"delete_item", description:"Delete a lesson, question or cheat row by id.", inputSchema:{type:"object",properties:{kind:{type:"string",enum:["lesson","question","cheat"]},id:{type:"string"}},required:["kind","id"]},
+  execute: i => { const k = {lesson:"lessons",question:"questions",cheat:"cheats"}[i.kind]; const n = data[k].length; data[k] = data[k].filter(x=>x.id!==i.id); return {ok:data[k].length<n}; }},
+ {name:"switch_tab", description:"Show a tab to the user: lessons, practice, cheat or progress.", inputSchema:{type:"object",properties:{tab:{type:"string",enum:["lessons","practice","cheat","progress"]}},required:["tab"]},
+  execute: i => { tab = i.tab; return {ok:true}; }}
+];
+const INSTR = "You are the editor assistant of a study website that helps one student prepare for the Anthropic Skilljar developer certificates (Claude API, Claude Code, MCP, Agent Skills, Subagents). You change the site ONLY by calling the provided tools, then confirm briefly what changed (one or two sentences). Style rules for content you write: analogy first, plain clear language, no oversimplifying, keep real English exam terms, practice questions must have exactly one correct answer and an explanation, cheat-sheet rows are concise. Call list_content first when you need ids. Only state technical facts you are confident about; if unsure, say so instead of inventing details. If the user just asks a study question, answer it directly without editing.";
+
+async function send(text){
+  if (!sample) { addMsg("s", "The chatbot is not available in this view. Open the page from claude.ai and sign in."); return; }
+  addMsg("u", text);
+  history.push({role:"user", content:text});
+  const msgs = history.map((m,i) => i===history.length-1 ? {role:"user", content: INSTR + "\n\nUser request: " + m.content} : m);
+  const bubble = addMsg("a", "Thinking...");
+  $("#go").disabled = true;
+  try {
+    const r = await sample(msgs, {tools, cache:false, onText: ({text}) => { bubble.textContent = text || "Thinking..."; $("#log").scrollTop = 1e9; }});
+    bubble.textContent = r.text || "Done.";
+    history.push({role:"assistant", content:r.text || "Done."});
+    await saveData();
+  } catch(e){
+    bubble.textContent = e && e.code === "rate_limited" ? "Rate limited. Try again in a moment." : "Could not complete that: " + (e && e.message || e);
+    history.pop();
+    await saveData();
+  } finally { $("#go").disabled = false; }
+}
+$("#f").onsubmit = e => { e.preventDefault(); const v = $("#t").value.trim(); if (!v) return; $("#t").value = ""; send(v); };
+$("#t").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#f").requestSubmit(); } };
+["Add a lesson on streaming","Add 5 more practice questions on MCP","Add a cheat-sheet row about hooks","Make the lessons shorter"].forEach(s => { const b = document.createElement("button"); b.type="button"; b.textContent = s; b.onclick = () => send(s); $("#chips").appendChild(b); });
+addMsg("a", "Hi! I can add, edit or delete lessons, practice questions and cheat-sheet rows. What should I change first?");
+
+loadData();
+claude.use("sample").then(s => { sample = s; }).catch(() => {});
+</script>
+</body>
+</html>
