@@ -189,7 +189,12 @@ const tools = [
 const INSTR = "You are the editor assistant of a study website that helps one student prepare for the Anthropic Skilljar developer certificates (Claude API, Claude Code, MCP, Agent Skills, Subagents). You change the site ONLY by calling the provided tools, then confirm briefly what changed (one or two sentences). Style rules for content you write: analogy first, plain clear language, no oversimplifying, keep real English exam terms, practice questions must have exactly one correct answer and an explanation, cheat-sheet rows are concise. Call list_content first when you need ids. Only state technical facts you are confident about; if unsure, say so instead of inventing details. If the user just asks a study question, answer it directly without editing.";
 
 async function send(text){
-  if (!sample) { addMsg("s", "The chatbot is not available in this view. Open the page from claude.ai and sign in."); return; }
+  if (!sample) {
+    const d = addMsg("s", "The chatbot only works inside claude.ai. Open this page there and sign in: ");
+    const a = document.createElement("a"); a.href = "https://claude.ai/artifact/39FWBT9JrS9rhdvpmLJXQD"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "claude.ai/artifact/39FWBT9JrS9rhdvpmLJXQD"; a.style.color = "var(--accent)";
+    d.appendChild(a);
+    return;
+  }
   addMsg("u", text);
   history.push({role:"user", content:text});
   const msgs = history.map((m,i) => i===history.length-1 ? {role:"user", content: INSTR + "\n\nUser request: " + m.content} : m);
